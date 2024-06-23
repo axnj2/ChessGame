@@ -17,7 +17,8 @@ int main(void)
         Color{ 238, 238, 210, 255 },
         Color{ 118, 150, 86, 255 },
         std::min(windowHeight, windowWidth) - 2 * sideBuffer, 
-        Vector2{ sideBuffer ,sideBuffer });
+        Vector2{ sideBuffer ,sideBuffer } // only does nice spacing for square windows
+    );
 
     InitWindow(windowWidth, windowHeight, "raylib [core] example - basic window");
 
