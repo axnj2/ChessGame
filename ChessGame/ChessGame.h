@@ -1,3 +1,9 @@
 #pragma once
+#include "Board.h"
 
-void drawWindow();
+#ifndef CHESSGAME_H
+#define CHESSGAME_H
+
+void drawWindow(Board board);
+
+#endif // !CHESSGAME_H
