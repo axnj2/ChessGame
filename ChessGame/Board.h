@@ -9,20 +9,12 @@
 
 typedef unsigned long long U64;
 
+using namespace std;
+
 
 typedef struct  {
-	U64 WPawns;
-	U64 WRooks;
-	U64 WKnights;
-	U64 WBishops;
-	U64 WQueens;
-	U64 WKing;
-	U64 BPawns;
-	U64 BRooks;
-	U64 BKnights;
-	U64 BBishops;
-	U64 BQueens;
-	U64 BKing;
+	// keys are contained in pieces
+	map<char, U64> piecesBitmaps;
 	U64 WEnPassant;
 	U64 BEnPassant;
 	bool WToMove;
@@ -38,14 +30,14 @@ private:
 	int boardSize;
 	struct Vector2 pos;
 	BoardState state;
-	std::map<std::string, Texture> piecesTextures;
-	std::string pieces[12] 
-		= {"K", "Q", "B", "N", "R", "P", "k", "q", "b", "n", "r", "p" };
+	std::map<char, Texture> piecesTextures;
+	char pieces[12] 
+		= {'K', 'Q', 'B', 'N', 'R', 'P', 'k', 'q', 'b', 'n', 'r', 'p' };
 
 
 	void drawSquare(int posx, int posy, struct Color squareColor);
 	BoardState ReadFEN(std::string FENState);
-	std::map<std::string, Texture> LoadPiecesImages();
+	std::map<char, Texture> LoadPiecesImages();
 public:
 	Board(
 		struct Color newWhiteColor,

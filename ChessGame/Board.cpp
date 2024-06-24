@@ -48,8 +48,10 @@ void Board::drawBoard() {
 		}
 	}
 
-	drawBitBoard(Color{ 255, 0,0,100 }, state.BPawns, piecesTextures["p"]);
-	drawBitBoard(Color{ 0, 0,255,100 }, state.WPawns);
+	for (int i = 0; i < 12; i++) {
+		drawBitBoard(Color{ 255, 0,0,100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
+	}
+	// drawBitBoard(Color{ 0, 0,255,100 }, state.WPawns);
 
 
 	// TODO add some sort of marker for which side it is the turn to play
@@ -78,9 +80,9 @@ void Board::drawBitBoard(Color highlightColor, U64 bitboard, Texture texture) {
 };
 
 
-std::map<std::string, Texture> Board::LoadPiecesImages() {
-	std::map<std::string, Image> newPiecesImages;
-	std::map<std::string, Texture> newPiecesTextures;
+std::map<char, Texture> Board::LoadPiecesImages() {
+	std::map<char, Image> newPiecesImages;
+	std::map<char, Texture> newPiecesTextures;
 
 	Image completeImage = LoadImage("C:/Users/antoi/source/repos/ChessGame/ChessGame/assets/allPieces.png");
 
@@ -150,46 +152,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 			col = 0;
 		}
 		else {
-			switch (piecesPos[i]) {
-			case 'p':
-				boardState.BPawns |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'n':
-				boardState.BKnights |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'b':
-				boardState.BBishops |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'q':
-				boardState.BQueens |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'k':
-				boardState.BKing |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'r':
-				boardState.BRooks |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'P':
-				boardState.WPawns |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'N':
-				boardState.WKnights |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'B':
-				boardState.WBishops |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'Q':
-				boardState.WQueens |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'K':
-				boardState.WKing |= static_cast<U64>(1) << (col+ row * 8);
-				break;
-			case 'R':
-				boardState.WRooks |= static_cast<U64>(1) << (col  + row * 8);
-				break;
-			default:
-				break;
-			}
+			boardState.piecesBitmaps[piecesPos[i]] |= static_cast<U64>(1) << (col + row * 8);
 			col += 1;
 		}
 	};
