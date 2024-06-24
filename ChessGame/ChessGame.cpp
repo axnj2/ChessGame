@@ -1,6 +1,3 @@
-// ChessGame.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include "ChessGame.h"
 #include "Board.h"
 #include <iostream>
@@ -17,10 +14,11 @@ int main(void)
         Color{ 238, 238, 210, 255 },
         Color{ 118, 150, 86, 255 },
         std::min(windowHeight, windowWidth) - 2 * sideBuffer, 
-        Vector2{ sideBuffer ,sideBuffer } // only does nice spacing for square windows
+        Vector2{ sideBuffer ,sideBuffer }, // only does nice spacing for square windows
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     );
 
-    InitWindow(windowWidth, windowHeight, "raylib [core] example - basic window");
+    InitWindow(windowWidth, windowHeight, "ChessBoard");
 
     while (!WindowShouldClose())
     {
