@@ -37,13 +37,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\Downloads\2560px-Chess_Pieces_Sprite.svg.png">
+    <Image Include="assets\allPieces.png">
       <Filter>Resource Files</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\Downloads\Chess_Pieces_Sprite.svg">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

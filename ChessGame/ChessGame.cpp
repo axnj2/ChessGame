@@ -10,6 +10,11 @@
 
 int main(void)
 {   
+    InitWindow(windowWidth, windowHeight, "ChessBoard");
+
+    
+
+
     Board testBoard = Board(
         Color{ 238, 238, 210, 255 },
         Color{ 118, 150, 86, 255 },
@@ -18,7 +23,8 @@ int main(void)
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     );
 
-    InitWindow(windowWidth, windowHeight, "ChessBoard");
+    std::cout << Texture{}.height;
+    
 
     while (!WindowShouldClose())
     {

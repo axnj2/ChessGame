@@ -5,6 +5,7 @@
 
 #include "raylib.h"
 #include <string>
+#include <map>
 
 typedef unsigned long long U64;
 
@@ -28,20 +29,6 @@ typedef struct  {
 
 } BoardState;
 
-typedef struct {
-	Image WPawn;
-	Image WRook;
-	Image WKnight;
-	Image WBishop;
-	Image WQueen;
-	Image WKing;
-	Image BPawn;
-	Image BRook;
-	Image BKnight;
-	Image BBishop;
-	Image BQueen;
-} PiecesImages;
-
 class Board 
 {
 private:
@@ -51,11 +38,14 @@ private:
 	int boardSize;
 	struct Vector2 pos;
 	BoardState state;
-	PiecesImages piecesImages;
+	std::map<std::string, Texture> piecesTextures;
+	std::string pieces[12] 
+		= {"K", "Q", "B", "N", "R", "P", "k", "q", "b", "n", "r", "p" };
+
 
 	void drawSquare(int posx, int posy, struct Color squareColor);
 	BoardState ReadFEN(std::string FENState);
-	PiecesImages LoadPiecesImages();
+	std::map<std::string, Texture> LoadPiecesImages();
 public:
 	Board(
 		struct Color newWhiteColor,
@@ -64,7 +54,7 @@ public:
 		struct Vector2 newPos,
 		std::string startingFENState);// using FEN notation https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	void drawBoard();
-	void drawBitBoard(Color highlightColor, U64 bitboard);
+	void drawBitBoard(Color highlightColor, U64 bitboard, Texture texture = Texture{});
 
 };
 

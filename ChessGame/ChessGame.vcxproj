@@ -140,10 +140,7 @@
     <ClInclude Include="DisplayElement.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\Downloads\2560px-Chess_Pieces_Sprite.svg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\Downloads\Chess_Pieces_Sprite.svg" />
+    <Image Include="assets\allPieces.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
