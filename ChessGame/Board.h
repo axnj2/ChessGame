@@ -41,8 +41,6 @@ private:
 	// interactions
 	Vector2Int squareSelected;
 
-
-
 	void drawSquare(int posx, int posy, struct Color squareColor);
 	BoardState ReadFEN(std::string FENState);
 	std::map<char, Texture> LoadPiecesImages();
@@ -52,6 +50,7 @@ private:
 	char whatIsOnSquare(Vector2Int);
 	void removePiece(Vector2Int, char);
 	void addPiece(Vector2Int, char);
+
 public:
 	Board(
 		struct Color newWhiteColor,
@@ -61,7 +60,6 @@ public:
 		std::string startingFENState);// using FEN notation https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	void drawBoard();
 	void onMouseClick();
-
 };
 
 #endif // !BOARD_H

@@ -15,7 +15,7 @@ Board::Board(
 	struct Vector2 newPos,
 	std::string startingFENState
 ) {
-	std::cout << "-------------Initializing Board ---------\n";
+	std::cout << "------------- Initializing Board -----------\n";
 
 	whiteColor = newWhiteColor;
 	blackColor = newBlackColor;
@@ -38,17 +38,19 @@ void Board::drawBoard() {
 			if ((i + j) % 2) {
 				color = blackColor;
 			}
-			else
-			{
+			else {
 				color = whiteColor;
 			}
 			drawSquare(int(pos.x) + i * squareSize, int(pos.y) + j * squareSize, color);
-
 		}
 	}
 
+	if (squareSelected.x != -1) {
+		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));
+	}
+
 	for (int i = 0; i < 12; i++) {
-		drawBitBoard(Color{ 255, 0,0,100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
+		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
 
 	// TODO add some sort of marker for which side it is the turn to play
@@ -56,7 +58,6 @@ void Board::drawBoard() {
 
 
 void Board::onMouseClick(){
-	cout << squareSelected.x << "  " << squareSelected.y << endl;
 	if (squareSelected.x == -1) {
 		squareSelected.x = (GetMouseX() - int(pos.x)) / squareSize;
 		squareSelected.y = (GetMouseY() - int(pos.y)) / squareSize;
@@ -74,7 +75,6 @@ void Board::onMouseClick(){
 
 		squareSelected.x = -1;
 	}
-	cout << squareSelected.x << "  " << squareSelected.y << endl;
 };
 
 
@@ -96,6 +96,7 @@ U64 Board::getMaskBitBoard(Vector2Int square) {
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
 
+
 char Board::whatIsOnSquare(Vector2Int square)
 {
 	char piece = 0;
@@ -111,11 +112,13 @@ char Board::whatIsOnSquare(Vector2Int square)
 	return piece;
 }
 
+
 void Board::removePiece(Vector2Int square, char piece) {
 	U64 removeMask = ~getMaskBitBoard(square);
 	std::cout << std::bitset<64>(removeMask) << '\n';
 	state.piecesBitmaps[piece] &= removeMask;
 }
+
 
 void Board::addPiece(Vector2Int square, char piece) {
 	U64 addMask = getMaskBitBoard(square);
@@ -177,7 +180,7 @@ std::map<char, Texture> Board::LoadPiecesImages() {
 Uses the structure of the FEN notation : https://www.chessprogramming.org/Forsyth-Edwards_Notation
 
 which is : <piecesPos> <Side to move> <Castling ability> 
-           <En passant target square> <Half move clock> <Full move counter>
+		   <En passant target square> <Half move clock> <Full move counter>
 with spaces as delimiters
 */
 BoardState Board::ReadFEN(std::string FENState) {
@@ -254,3 +257,4 @@ BoardState Board::ReadFEN(std::string FENState) {
 
 	return boardState;
 };
+
