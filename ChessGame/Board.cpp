@@ -57,7 +57,14 @@ void Board::drawBoard() {
 		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
 
+	// drawBitBoard(GREEN, shiftMask(getMaskBitBoard(Vector2Int{ 2, 2 }), Vector2Int{ 2,2 }));
+
+	drawBitBoard(RED, getValidMovesBitBoardKnight(Vector2Int{1, 0}, true));
+
+	
+
 	// TODO add some sort of marker for which side it is the turn to play
+
 };
 
 
@@ -101,6 +108,7 @@ TODO :
 bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
 	char friendlyPiece = whatIsOnSquare(from);
+	
 
 	
 	std::vector<char> friendlyPieces;
@@ -144,6 +152,90 @@ bool Board::movePiece(Vector2Int from, Vector2Int to) {
 U64 Board::getMaskBitBoard(Vector2Int square) {
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
+
+U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
+{
+	if (piece == 'n' || piece == 'N') {
+		return getValidMovesBitBoardKnight(square, isupper(piece));
+	}
+
+	return U64();
+}
+
+U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
+{
+	// for a knight in position (2, 2)
+	//     0  x  0  x  0  0  0  0
+	//     x  0  0  0  x  0  0  0
+	//     0  0  n  0  0  0  0  0
+	//     x  0  0  0  x  0  0  0
+	//     0  x  0  x  0  0  0  0
+	U64 upDownMask = 0b1010;
+	U64 leftRightMask = 0b10001;
+	U64 baseMask = upDownMask | (upDownMask << 4 * 8) | (leftRightMask << 8) | (leftRightMask << 3 * 8);
+
+	Vector2Int shift = Vector2Int{ square.x - 2, square.y - 2 };
+
+	U64 shiftedMask = shiftMask(baseMask, shift);
+
+	U64 finalMask = shiftedMask;
+
+	vector<char> pieceList;
+	if (isWhite) {
+		pieceList = WPieces;
+	}
+	else {
+		pieceList = BPieces;
+	}
+	// todo remove squares that are occupied by allied pieces.
+	
+	return finalMask;
+}
+
+// pure function
+U64 Board::shiftMask(U64 baseMask, Vector2Int shift)
+{
+	U64 vertShiftMask;
+	// vectical shift
+	if (shift.y >= 0) {
+		vertShiftMask = baseMask << shift.y * 8;
+	}
+	else {
+		vertShiftMask = baseMask >> -shift.y * 8;
+	}
+
+	U64 finalMask = 0ull;
+
+	// horizontal shift
+	//process line by line
+	for (int i = 0; i < 8; i++) {
+		if (shift.x >= 0) {
+			finalMask |= ((vertShiftMask & lineMask(i)) << shift.x) & lineMask(i);
+		}
+		else {
+			finalMask |= ((vertShiftMask & lineMask(i)) >> -shift.x) & lineMask(i);
+		}
+	}
+
+	return finalMask;
+}
+
+// could have been hard coded in a list to be honnest.
+U64 Board::lineMask(int line) {
+	U64 mask;
+
+	if (line == 0) {
+
+		mask = (1ull << (8 * (line + 1))) - 1;
+	}
+	else if (line == 7) {
+		mask = (1ull << (8 * (line + 1) - 1)) - 1 - ((1ull << (8 * (line))) - 1) + (1ull << 63);
+	}
+	else {
+		mask = (1ull << (8 * (line + 1))) - 1 - ((1ull << (8 * (line))) - 1);
+	}
+	return mask;
+}	
 
 
 char Board::whatIsOnSquare(Vector2Int square, vector<char> SelectedPieces)
@@ -191,6 +283,12 @@ Vector2Int Board::processClick(int x, int y) {
 
 	return square;
 }
+
+void Board::displayBitBoard(U64 bitBoard) {
+	cout << std::bitset<64>(bitBoard) << endl;
+}
+
+
 
 
 void Board::drawSquare(int posx, int posy, struct Color squareColor) {

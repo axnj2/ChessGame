@@ -53,10 +53,16 @@ private:
 	// returns true if the move was valid
 	bool movePiece(Vector2Int, Vector2Int);
 	U64 getMaskBitBoard(Vector2Int);
+	U64 getValidMovesBitBoard(Vector2Int, char);
+	U64 getValidMovesBitBoardKnight(Vector2Int, bool);
+	U64 shiftMask(U64, Vector2Int);
+	U64 lineMask(int line);
 	char whatIsOnSquare(Vector2Int, const vector<char> = pieces);
 	void removePiece(Vector2Int, char);
 	void addPiece(Vector2Int, char);
 	Vector2Int processClick(int, int);
+	void displayBitBoard(U64);
+
 public:
 	Board(
 		struct Color newWhiteColor,
@@ -67,5 +73,7 @@ public:
 	void drawBoard();
 	void onMouseClick();
 };
+
+
 
 #endif // !BOARD_H
