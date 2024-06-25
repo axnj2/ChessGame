@@ -1,12 +1,17 @@
 #include "raylib.h"
 #include "Board.h"
 #include <ctype.h>
+#include <iterator>
 
 //DEBUG :
 #include <iostream>
 #include <bitset>
 
 using namespace std;
+
+
+const std::vector<char> Board::pieces = { 'K', 'Q', 'B', 'N', 'R', 'P', 'k', 'q', 'b', 'n', 'r', 'p' };
+
 
 Board::Board(
 	struct Color newWhiteColor,
@@ -25,8 +30,7 @@ Board::Board(
 	state = ReadFEN(startingFENState);
 	piecesTextures = LoadPiecesImages();
 
-	squareSelected.x = -1;
-	squareSelected.y = -1;
+	squareSelected = Vector2Int{ -1, -1 };
 }
 
 
@@ -59,26 +63,35 @@ void Board::drawBoard() {
 
 void Board::onMouseClick(){
 	if (squareSelected.x == -1) {
-		squareSelected.x = (GetMouseX() - int(pos.x)) / squareSize;
-		squareSelected.y = (GetMouseY() - int(pos.y)) / squareSize;
+		squareSelected = processClick(GetMouseX(), GetMouseY());
 
-		if (!whatIsOnSquare(squareSelected)) {
+		if (squareSelected.x == -2) {
 			squareSelected = Vector2Int{ -1, -1 };
+		}
+		if (state.WToMove) {
+			if (!whatIsOnSquare(squareSelected, WPieces)) {
+				squareSelected = Vector2Int{ -1, -1 };
+			}
+		}
+		else {
+			if (!whatIsOnSquare(squareSelected, BPieces)) {
+				squareSelected = Vector2Int{ -1, -1 };
+			}
 		}
 	}
 	else {
-		Vector2Int targetSquare = Vector2Int{
-			(GetMouseX() - int(pos.x)) / squareSize,
-			(GetMouseY() - int(pos.y)) / squareSize};
-
-		movePiece(squareSelected, targetSquare);
-
+		Vector2Int targetSquare = processClick(GetMouseX(), GetMouseY());
+		if (targetSquare.x != -2) {
+			if (movePiece(squareSelected, targetSquare)) {
+				state.WToMove = !state.WToMove;
+			}
+		}
 		squareSelected.x = -1;
 	}
 };
 
 
-void Board::movePiece(Vector2Int from, Vector2Int to) {
+bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
 	char piece = whatIsOnSquare(from);
 
@@ -88,7 +101,9 @@ void Board::movePiece(Vector2Int from, Vector2Int to) {
 	if (empty) {
 		removePiece(from, piece);
 		addPiece(to, piece);
+		return true;
 	}
+	return false;
 };
 
 
@@ -97,14 +112,14 @@ U64 Board::getMaskBitBoard(Vector2Int square) {
 }
 
 
-char Board::whatIsOnSquare(Vector2Int square)
+char Board::whatIsOnSquare(Vector2Int square, vector<char> SelectedPieces)
 {
 	char piece = 0;
 	U64 fromBitBoardMask = getMaskBitBoard(square);
 
-	for (int i = 0; i < 12; i++) {
-		if (state.piecesBitmaps[pieces[i]] & fromBitBoardMask) {
-			piece = pieces[i];
+	for (int i = 0; i < SelectedPieces.size(); i++) {
+		if (state.piecesBitmaps[SelectedPieces[i]] & fromBitBoardMask) {
+			piece = SelectedPieces[i];
 			break;
 		}
 	}
@@ -115,15 +130,32 @@ char Board::whatIsOnSquare(Vector2Int square)
 
 void Board::removePiece(Vector2Int square, char piece) {
 	U64 removeMask = ~getMaskBitBoard(square);
-	std::cout << std::bitset<64>(removeMask) << '\n';
 	state.piecesBitmaps[piece] &= removeMask;
 }
 
 
 void Board::addPiece(Vector2Int square, char piece) {
 	U64 addMask = getMaskBitBoard(square);
-	std::cout << std::bitset<64>(addMask) << '\n';
 	state.piecesBitmaps[piece] |= addMask;
+}
+
+
+/*
+Returns Vector2Int{-2, -2} is the click is outside of the board
+*/
+Vector2Int Board::processClick(int x, int y) {
+	Vector2Int square;
+	x -= pos.x;
+	y -= pos.y;
+
+	if (x > squareSize * 8 || y > squareSize * 8 || x <0 || y < 0) {
+		square = Vector2Int{ -2, -2 };
+	}
+	else {
+		square = Vector2Int{ x / squareSize, y / squareSize };
+	}
+
+	return square;
 }
 
 

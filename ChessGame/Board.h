@@ -6,6 +6,7 @@
 #include "raylib.h"
 #include <string>
 #include <map>
+#include <vector>
 
 typedef unsigned long long U64;
 
@@ -35,8 +36,11 @@ private:
 	struct Vector2 pos;
 	BoardState state;
 	std::map<char, Texture> piecesTextures;
-	char pieces[12] 
-		= {'K', 'Q', 'B', 'N', 'R', 'P', 'k', 'q', 'b', 'n', 'r', 'p' };
+	static const std::vector<char> pieces;
+	const std::vector<char> WPieces
+		= { 'K', 'Q', 'B', 'N', 'R', 'P' };
+	const std::vector<char> BPieces
+		= { 'k', 'q', 'b', 'n', 'r', 'p' };
 
 	// interactions
 	Vector2Int squareSelected;
@@ -44,13 +48,15 @@ private:
 	void drawSquare(int posx, int posy, struct Color squareColor);
 	BoardState ReadFEN(std::string FENState);
 	std::map<char, Texture> LoadPiecesImages();
+
 	void drawBitBoard(Color, U64, Texture = Texture{});
-	void movePiece(Vector2Int, Vector2Int);
+	// returns true if the move was valid
+	bool movePiece(Vector2Int, Vector2Int);
 	U64 getMaskBitBoard(Vector2Int);
-	char whatIsOnSquare(Vector2Int);
+	char whatIsOnSquare(Vector2Int, const vector<char> = pieces);
 	void removePiece(Vector2Int, char);
 	void addPiece(Vector2Int, char);
-
+	Vector2Int processClick(int, int);
 public:
 	Board(
 		struct Color newWhiteColor,
