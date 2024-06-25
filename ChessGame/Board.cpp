@@ -92,6 +92,11 @@ void Board::onMouseClick(){
 
 /*
 Uses the state variable to access the bitboards and whose turn it is to move
+TODO :
+ - rules for each pieces
+ - checks
+ - checkmate
+ - en Passant
 */
 bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
