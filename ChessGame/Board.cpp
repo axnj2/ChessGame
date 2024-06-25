@@ -24,6 +24,9 @@ Board::Board(
 	squareSize = boardSize / 8;
 	state = ReadFEN(startingFENState);
 	piecesTextures = LoadPiecesImages();
+
+	squareSelected.x = -1;
+	squareSelected.y = -1;
 }
 
 
@@ -53,21 +56,72 @@ void Board::drawBoard() {
 
 
 void Board::onMouseClick(){
-	// FIX-ME : pourquoi est-ce ça reste -1 -1 ?
 	cout << squareSelected.x << "  " << squareSelected.y << endl;
 	if (squareSelected.x == -1) {
-		int x  = GetMouseX();
-		int y = GetMouseY();
-		x -=  int(pos.x);
-		y -= int(pos.y);
-		y = int(y / squareSize);
-		x = int(x / squareSize); 
+		squareSelected.x = (GetMouseX() - int(pos.x)) / squareSize;
+		squareSelected.y = (GetMouseY() - int(pos.y)) / squareSize;
 
-		squareSelected = Vector2{ float(x), float(y) };
-		
+		if (!whatIsOnSquare(squareSelected)) {
+			squareSelected = Vector2Int{ -1, -1 };
+		}
+	}
+	else {
+		Vector2Int targetSquare = Vector2Int{
+			(GetMouseX() - int(pos.x)) / squareSize,
+			(GetMouseY() - int(pos.y)) / squareSize};
+
+		movePiece(squareSelected, targetSquare);
+
+		squareSelected.x = -1;
 	}
 	cout << squareSelected.x << "  " << squareSelected.y << endl;
 };
+
+
+void Board::movePiece(Vector2Int from, Vector2Int to) {
+	// first find what piece is on the from square (assumes 1 piece per square)
+	char piece = whatIsOnSquare(from);
+
+	// check that there is no piece on the to square
+	bool empty = !whatIsOnSquare(to);
+
+	if (empty) {
+		removePiece(from, piece);
+		addPiece(to, piece);
+	}
+};
+
+
+U64 Board::getMaskBitBoard(Vector2Int square) {
+	return static_cast<U64>(1) << (square.x + square.y * 8);
+}
+
+char Board::whatIsOnSquare(Vector2Int square)
+{
+	char piece = 0;
+	U64 fromBitBoardMask = getMaskBitBoard(square);
+
+	for (int i = 0; i < 12; i++) {
+		if (state.piecesBitmaps[pieces[i]] & fromBitBoardMask) {
+			piece = pieces[i];
+			break;
+		}
+	}
+
+	return piece;
+}
+
+void Board::removePiece(Vector2Int square, char piece) {
+	U64 removeMask = ~getMaskBitBoard(square);
+	std::cout << std::bitset<64>(removeMask) << '\n';
+	state.piecesBitmaps[piece] &= removeMask;
+}
+
+void Board::addPiece(Vector2Int square, char piece) {
+	U64 addMask = getMaskBitBoard(square);
+	std::cout << std::bitset<64>(addMask) << '\n';
+	state.piecesBitmaps[piece] |= addMask;
+}
 
 
 void Board::drawSquare(int posx, int posy, struct Color squareColor) {
@@ -102,6 +156,7 @@ std::map<char, Texture> Board::LoadPiecesImages() {
 	std::map<char, Image> newPiecesImages;
 	std::map<char, Texture> newPiecesTextures;
 
+	// TODO change this to relative path
 	Image completeImage = LoadImage("C:/Users/antoi/source/repos/ChessGame/ChessGame/assets/allPieces.png");
 
 	ImageCrop(&completeImage, Rectangle{ 2,1,2556, 852 });
