@@ -29,9 +29,9 @@ int main(void)
     while (!WindowShouldClose())
     {
         BeginDrawing();
-        drawWindow(testBoard);
+        drawWindow(&testBoard);
         EndDrawing();
-        processInput(testBoard);
+        processInput(&testBoard);
     }
 
     CloseWindow();
@@ -39,14 +39,14 @@ int main(void)
     return 0;
 }
 
-void drawWindow(Board board) {
+void drawWindow(Board *board) {
     ClearBackground(RAYWHITE);
-    board.drawBoard();
+    board->drawBoard();
 }
 
-void processInput(Board board) {
+void processInput(Board *board) {
     if (IsMouseButtonPressed(0)) {
-        board.onMouseClick();
+        board->onMouseClick();
     }
 }
 
