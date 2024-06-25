@@ -90,18 +90,47 @@ void Board::onMouseClick(){
 	}
 };
 
-
+/*
+Uses the state variable to access the bitboards and whose turn it is to move
+*/
 bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
-	char piece = whatIsOnSquare(from);
+	char friendlyPiece = whatIsOnSquare(from);
+
+	
+	std::vector<char> friendlyPieces;
+	if (state.WToMove) {
+		friendlyPieces = WPieces;
+	}
+	else
+	{
+		friendlyPieces = BPieces;
+	}
+
+	// check if occupied by friendly piece
+	if (whatIsOnSquare(to, friendlyPieces)) {
+		return false;
+	}
+
+	// check if the target square is occupied by enemy, if so kill it
+	// TODO make it correct, but for now kills the enemy piece on the square
+	
+	char enemyPiece = whatIsOnSquare(to); // can't be a friendly piece since it was checked before
+	if (enemyPiece) { // false if the square is empty
+		removePiece(to, enemyPiece);
+	}
+	
 
 	// check that there is no piece on the to square
 	bool empty = !whatIsOnSquare(to);
 
 	if (empty) {
-		removePiece(from, piece);
-		addPiece(to, piece);
+		removePiece(from, friendlyPiece);
+		addPiece(to, friendlyPiece);
 		return true;
+	}
+	else {
+		
 	}
 	return false;
 };
