@@ -21,8 +21,7 @@ typedef struct  {
 
 } BoardState;
 
-class Board 
-{
+class Board {
 private:
 	struct Color whiteColor;
 	struct Color blackColor;
@@ -34,10 +33,15 @@ private:
 	char pieces[12] 
 		= {'K', 'Q', 'B', 'N', 'R', 'P', 'k', 'q', 'b', 'n', 'r', 'p' };
 
+	// interactions
+	Vector2 squareSelected = Vector2{ -1, -1 };
+
+
 
 	void drawSquare(int posx, int posy, struct Color squareColor);
 	BoardState ReadFEN(std::string FENState);
 	std::map<char, Texture> LoadPiecesImages();
+	void drawBitBoard(Color highlightColor, U64 bitboard, Texture texture = Texture{});
 public:
 	Board(
 		struct Color newWhiteColor,
@@ -46,7 +50,7 @@ public:
 		struct Vector2 newPos,
 		std::string startingFENState);// using FEN notation https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	void drawBoard();
-	void drawBitBoard(Color highlightColor, U64 bitboard, Texture texture = Texture{});
+	void onMouseClick();
 
 };
 

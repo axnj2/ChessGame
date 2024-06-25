@@ -6,4 +6,6 @@
 
 void drawWindow(Board board);
 
+void processInput(Board board);
+
 #endif // !CHESSGAME_H

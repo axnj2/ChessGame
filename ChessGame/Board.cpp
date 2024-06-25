@@ -27,10 +27,6 @@ Board::Board(
 }
 
 
-void Board::drawSquare(int posx, int posy, struct Color squareColor){
-	DrawRectangle(posx, posy, squareSize, squareSize, squareColor);
-}
-
 void Board::drawBoard() {
 	struct Color color;
 
@@ -51,11 +47,33 @@ void Board::drawBoard() {
 	for (int i = 0; i < 12; i++) {
 		drawBitBoard(Color{ 255, 0,0,100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
-	// drawBitBoard(Color{ 0, 0,255,100 }, state.WPawns);
-
 
 	// TODO add some sort of marker for which side it is the turn to play
 };
+
+
+void Board::onMouseClick(){
+	// FIX-ME : pourquoi est-ce ça reste -1 -1 ?
+	cout << squareSelected.x << "  " << squareSelected.y << endl;
+	if (squareSelected.x == -1) {
+		int x  = GetMouseX();
+		int y = GetMouseY();
+		x -=  int(pos.x);
+		y -= int(pos.y);
+		y = int(y / squareSize);
+		x = int(x / squareSize); 
+
+		squareSelected = Vector2{ float(x), float(y) };
+		
+	}
+	cout << squareSelected.x << "  " << squareSelected.y << endl;
+};
+
+
+void Board::drawSquare(int posx, int posy, struct Color squareColor) {
+	DrawRectangle(posx, posy, squareSize, squareSize, squareColor);
+};
+
 
 void Board::drawBitBoard(Color highlightColor, U64 bitboard, Texture texture) {
 	for (int col = 0; col < 8; col++) {
@@ -87,7 +105,7 @@ std::map<char, Texture> Board::LoadPiecesImages() {
 	Image completeImage = LoadImage("C:/Users/antoi/source/repos/ChessGame/ChessGame/assets/allPieces.png");
 
 	ImageCrop(&completeImage, Rectangle{ 2,1,2556, 852 });
-	std::cout << "width : " << completeImage.width << " height : " << completeImage.height << "\n";
+	// std::cout << "width : " << completeImage.width << " height : " << completeImage.height << "\n";
 
 	for (int i = 0; i < 12; i++) {
 		newPiecesImages[pieces[i]] = ImageCopy(completeImage);
@@ -157,7 +175,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 		}
 	};
 
-	// std::cout << std::bitset<64>(boardState.BPawns) << '\n';
+	// std::cout << std::bitset<64>(boardState.piecesBitmaps['p']) << '\n';
 
 
 	// side to move

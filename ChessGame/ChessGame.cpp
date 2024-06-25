@@ -31,6 +31,7 @@ int main(void)
         BeginDrawing();
         drawWindow(testBoard);
         EndDrawing();
+        processInput(testBoard);
     }
 
     CloseWindow();
@@ -41,6 +42,11 @@ int main(void)
 void drawWindow(Board board) {
     ClearBackground(RAYWHITE);
     board.drawBoard();
-    // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+}
+
+void processInput(Board board) {
+    if (IsMouseButtonPressed(0)) {
+        board.onMouseClick();
+    }
 }
 
