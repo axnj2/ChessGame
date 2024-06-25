@@ -11,7 +11,7 @@
 int main(void)
 {   
     InitWindow(windowWidth, windowHeight, "ChessBoard");
-
+    SetTargetFPS(144);
     
 
 
