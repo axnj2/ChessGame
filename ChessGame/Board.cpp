@@ -37,17 +37,9 @@ Board::Board(
 void Board::drawBoard() {
 	struct Color color;
 
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			if ((i + j) % 2) {
-				color = blackColor;
-			}
-			else {
-				color = whiteColor;
-			}
-			drawSquare(int(pos.x) + i * squareSize, int(pos.y) + j * squareSize, color);
-		}
-	}
+	//draw the squares
+	drawBitBoard(whiteColor, 0b1010101001010101101010100101010110101010010101011010101001010101ull);
+	drawBitBoard(blackColor, ~0b1010101001010101101010100101010110101010010101011010101001010101ull);
 
 	if (squareSelected.x != -1) {
 		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));

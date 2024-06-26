@@ -39,7 +39,7 @@ private:
 	static const std::vector<char> pieces;
 	const std::vector<char> WPieces
 		= { 'K', 'Q', 'B', 'N', 'R', 'P' };
-	const std::vector<char> BPieces
+	const std::vector<char> BPieces 
 		= { 'k', 'q', 'b', 'n', 'r', 'p' };
 
 	// interactions
