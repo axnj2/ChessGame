@@ -43,15 +43,16 @@ void Board::drawBoard() {
 
 	if (squareSelected.x != -1) {
 		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));
+		drawBitBoard(Color{ 255, 0 , 0, 100 }, getValidMovesBitBoardKnight(squareSelected, state.WToMove));
 	}
 
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < pieces.size(); i++) {
 		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
 
 	// drawBitBoard(GREEN, shiftMask(getMaskBitBoard(Vector2Int{ 2, 2 }), Vector2Int{ 2,2 }));
 
-	drawBitBoard(RED, getValidMovesBitBoardKnight(Vector2Int{1, 0}, true));
+	
 
 	
 
@@ -180,8 +181,14 @@ U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
 		pieceList = BPieces;
 	}
 	// todo remove squares that are occupied by allied pieces.
-	
-	return finalMask;
+
+	U64 toBeRemoved = 0;
+	for (int i = 0; i < pieceList.size(); i++){
+		toBeRemoved |= state.piecesBitmaps[pieceList[i]] & finalMask;
+	}
+
+	finalMask = finalMask - toBeRemoved;
+	return  finalMask;
 }
 
 // pure function
