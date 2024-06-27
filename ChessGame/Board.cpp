@@ -35,15 +35,15 @@ Board::Board(
 
 
 void Board::drawBoard() {
-	struct Color color;
-
 	//draw the squares
 	drawBitBoard(whiteColor, 0b1010101001010101101010100101010110101010010101011010101001010101ull);
 	drawBitBoard(blackColor, ~0b1010101001010101101010100101010110101010010101011010101001010101ull);
 
 	if (squareSelected.x != -1) {
 		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));
-		drawBitBoard(Color{ 255, 0 , 0, 100 }, getValidMovesBitBoardKnight(squareSelected, state.WToMove));
+		drawBitBoard(
+			Color{ 255, 0 , 0, 100 },
+			getValidMovesBitBoard(squareSelected, whatIsOnSquare(squareSelected)));
 	}
 
 	for (int i = 0; i < pieces.size(); i++) {
@@ -120,12 +120,12 @@ bool Board::movePiece(Vector2Int from, Vector2Int to) {
 
 	// check if the target square is occupied by enemy, if so kill it
 	// TODO make it correct, but for now kills the enemy piece on the square
-	
+
 	char enemyPiece = whatIsOnSquare(to); // can't be a friendly piece since it was checked before
 	if (enemyPiece) { // false if the square is empty
 		removePiece(to, enemyPiece);
 	}
-	
+
 
 	// check that there is no piece on the to square
 	bool empty = !whatIsOnSquare(to);
@@ -136,7 +136,7 @@ bool Board::movePiece(Vector2Int from, Vector2Int to) {
 		return true;
 	}
 	else {
-		
+
 	}
 	return false;
 };
@@ -151,8 +151,15 @@ U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
 	if (piece == 'n' || piece == 'N') {
 		return getValidMovesBitBoardKnight(square, isupper(piece));
 	}
+	else if (piece == 'p' || piece == 'P') {
+		return getValidMovesBitBoardPawn(square, isupper(piece));
+	}
+	else if (piece == 'r' || piece == 'R') {
+		return getValidMovesBitBoardRook(square, isupper(piece));
+	}
 
-	return U64();
+
+	return 0;
 }
 
 U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
@@ -173,22 +180,77 @@ U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
 
 	U64 finalMask = shiftedMask;
 
-	vector<char> pieceList;
+	vector<char> alliedPiecesList;
 	if (isWhite) {
-		pieceList = WPieces;
+		alliedPiecesList = WPieces;
 	}
 	else {
-		pieceList = BPieces;
-	}
-	// todo remove squares that are occupied by allied pieces.
-
-	U64 toBeRemoved = 0;
-	for (int i = 0; i < pieceList.size(); i++){
-		toBeRemoved |= state.piecesBitmaps[pieceList[i]] & finalMask;
+		alliedPiecesList = BPieces;
 	}
 
-	finalMask = finalMask - toBeRemoved;
+	finalMask = removeAllies(finalMask, alliedPiecesList);
+
+
 	return  finalMask;
+}
+
+U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
+{
+	U64 finalBitBoard = 0;
+	int direction;
+	bool onHomeRow = false;
+	vector<char> enemyPieces;
+	if (isWhite) {
+		direction = -1;
+		enemyPieces = BPieces;
+		if (square.y == 6) {
+			onHomeRow = true;
+		}
+	}
+	else {
+		direction = 1;
+		if (square.y == 1) {
+			onHomeRow = true;
+		}
+		enemyPieces = WPieces;
+	}
+
+	if (!whatIsOnSquare(Vector2Int{ square.x, square.y + direction }, pieces)) {
+		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + direction });
+	}
+	if (onHomeRow && !whatIsOnSquare(Vector2Int{ square.x, square.y + 2 * direction }, pieces)) {
+		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + 2 * direction });
+	}
+
+	// attacks
+	if (whatIsOnSquare(Vector2Int{ square.x -1, square.y + direction }, enemyPieces)) {
+		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x - 1, square.y + direction });
+	}
+	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, enemyPieces)) {
+		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x + 1, square.y + direction });
+	}
+
+	return finalBitBoard;
+}
+
+U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
+	U64 finalMask = 0ull;
+
+	vector<char> alliedPieces;
+	if (isWhite) {
+		alliedPieces = WPieces;
+	}
+	else {
+		alliedPieces = BPieces;
+	}
+
+	finalMask |= lineMask(square.y);
+
+	finalMask = removeAllies(finalMask, alliedPieces);
+
+	
+
+	return finalMask;
 }
 
 // pure function
@@ -216,6 +278,23 @@ U64 Board::shiftMask(U64 baseMask, Vector2Int shift)
 		}
 	}
 
+	return finalMask;
+}
+
+U64 Board::removeOverLaps(U64 A, U64 B)
+{
+	U64 overlaps = A & B;
+	return A - overlaps;
+}
+
+U64 Board::removeAllies(U64 mask, vector<char> allies)
+{
+	U64 finalMask = mask;
+	
+	// remove squares that are occupied by allied pieces.
+	for (int i = 0; i < allies.size(); i++) {
+		finalMask = removeOverLaps(finalMask, state.piecesBitmaps[allies[i]]);
+	}
 	return finalMask;
 }
 
