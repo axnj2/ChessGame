@@ -534,12 +534,16 @@ std::map<char, Texture> Board::LoadPiecesImages() {
 	std::map<char, Image> newPiecesImages;
 	std::map<char, Texture> newPiecesTextures;
 
-	// TODO change this to relative path
-	Image completeImage = LoadImage("C:/Users/antoi/source/repos/ChessGame/ChessGame/assets/allPieces.png");
+	Image completeImage = LoadImage("./allPieces.png");
+	
+	if (!completeImage.width) {
+		// only needed when running in Visual studio
+		completeImage = LoadImage("C:/Users/antoi/source/repos/ChessGame/x64/Debug/allPieces.png");
+	}
 
 	ImageCrop(&completeImage, Rectangle{ 2,1,2556, 852 });
 	// std::cout << "width : " << completeImage.width << " height : " << completeImage.height << "\n";
-
+	
 	for (int i = 0; i < 12; i++) {
 		newPiecesImages[pieces[i]] = ImageCopy(completeImage);
 		ImageCrop(&newPiecesImages[pieces[i]], Rectangle{ float(i % 6 * 426),float( int(i/6) * 426), 426, 426 });
@@ -628,7 +632,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 	// then use static_cast<U64>(1) << (col+ row * 8)
 	// if row = 3 => Black En passant else WEnPassant
 
-	// TODO clocks
+	// TODO halfTurn Clock
 
 	boardState.turn = stoi(FullMoveClock);
 

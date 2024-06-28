@@ -11,7 +11,7 @@
 int main(void)
 {   
     InitWindow(windowWidth, windowHeight, "ChessBoard");
-    SetTargetFPS(144); // avoids the game running at crazy 1500 FPS or more using 10% of CPU 
+    SetTargetFPS(144); // avoids the game running at crazy 3000 FPS or more using 10% of CPU 
     
 
 
@@ -42,6 +42,7 @@ int main(void)
 void drawWindow(Board *board) {
     ClearBackground(RAYWHITE);
     board->drawBoard();
+    DrawFPS(windowWidth - 150, 25);
 }
 
 void processInput(Board *board) {
