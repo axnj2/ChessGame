@@ -40,6 +40,14 @@ void Board::drawBoard() {
 	drawBitBoard(blackColor, ~0b1010101001010101101010100101010110101010010101011010101001010101ull);
 
 	if (squareSelected.x != -1) {
+		vector<char> allies;
+		if (state.WToMove) {
+			allies = WPieces;
+		}
+		else {
+			allies = BPieces;
+		}
+
 		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));
 		drawBitBoard(
 			Color{ 255, 0 , 0, 100 },
@@ -50,11 +58,12 @@ void Board::drawBoard() {
 		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
 	
+	// draw the turn number
+	DrawText(to_string(state.turn).c_str(), squareSize * 8 + squareSize / 4, squareSize * 4, 50, GRAY);
 
-	
-
-	// TODO add some sort of marker for which side it is the turn to play
-
+	// indicate whose turn is is : 
+	string text = "Your Turn";
+	DrawText(text.c_str(), squareSize * 8 + squareSize / 4, squareSize + state.WToMove * (squareSize * 6), 50, BLACK);
 };
 
 
@@ -82,6 +91,9 @@ void Board::onMouseClick(){
 		if (targetSquare.x != -2) {
 			if (movePiece(squareSelected, targetSquare)) {
 				state.WToMove = !state.WToMove;
+				if (state.WToMove) {
+					state.turn += 1;
+				}
 			}
 		}
 		squareSelected.x = -1;
@@ -91,7 +103,6 @@ void Board::onMouseClick(){
 /*
 Uses the state variable to access the bitboards and whose turn it is to move
 TODO :
- - rules for each pieces
  - checks
  - checkmate
  - en Passant
@@ -146,31 +157,40 @@ U64 Board::getMaskBitBoard(Vector2Int square) {
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
 
-U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
+U64 Board::getAttacksBitBoard(Vector2Int square, char piece)
 {
+	U64 attacks = 0ull;
 	if (piece == 'n' || piece == 'N') {
-		return getValidMovesBitBoardKnight(square, isupper(piece));
+		attacks = getValidMovesBitBoardKnight(square);
 	}
 	else if (piece == 'p' || piece == 'P') {
-		return getValidMovesBitBoardPawn(square, isupper(piece));
+		attacks = getValidMovesBitBoardPawn(square, isupper(piece));
 	}
 	else if (piece == 'r' || piece == 'R') {
-		return getValidMovesBitBoardRook(square, isupper(piece));
+		attacks = getValidMovesBitBoardRook(square);
 	}
 	else if (piece == 'b' || piece == 'B') {
-		return getValidMovesBitBoardBishop(square, isupper(piece));
+		attacks = getValidMovesBitBoardBishop(square);
 	}
 	else if (piece == 'q' || piece == 'Q') {
-		return getValidMovesBitBoardQueen(square, isupper(piece));
+		attacks = getValidMovesBitBoardQueen(square);
 	}
 	else if (piece == 'k' || piece == 'K') {
-		return getValidMovesBitBoardKing(square, isupper(piece));
+		attacks = getValidMovesBitBoardKing(square);
 	}
 
-	return 0;
+	return attacks;
 }
 
-U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
+U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
+{
+	U64 attacks = getAttacksBitBoard(square, piece);
+	return removeAllies(attacks, getAllies(isupper(piece)));
+}
+
+
+
+U64 Board::getValidMovesBitBoardKnight(Vector2Int square)
 {
 	// for a knight in position (2, 2)
 	//     0  x  0  x  0  0  0  0
@@ -188,17 +208,6 @@ U64 Board::getValidMovesBitBoardKnight(Vector2Int square, bool isWhite)
 
 	U64 finalMask = shiftedMask;
 
-	vector<char> alliedPiecesList;
-	if (isWhite) {
-		alliedPiecesList = WPieces;
-	}
-	else {
-		alliedPiecesList = BPieces;
-	}
-
-	finalMask = removeAllies(finalMask, alliedPiecesList);
-
-
 	return  finalMask;
 }
 
@@ -207,10 +216,8 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 	U64 finalBitBoard = 0;
 	int direction;
 	bool onHomeRow = false;
-	vector<char> enemyPieces;
 	if (isWhite) {
 		direction = -1;
-		enemyPieces = BPieces;
 		if (square.y == 6) {
 			onHomeRow = true;
 		}
@@ -220,21 +227,20 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 		if (square.y == 1) {
 			onHomeRow = true;
 		}
-		enemyPieces = WPieces;
 	}
 
 	if (!whatIsOnSquare(Vector2Int{ square.x, square.y + direction }, pieces)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + direction });
-	}
-	if (onHomeRow && !whatIsOnSquare(Vector2Int{ square.x, square.y + 2 * direction }, pieces)) {
-		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + 2 * direction });
+		if (onHomeRow && !whatIsOnSquare(Vector2Int{ square.x, square.y + 2 * direction }, pieces)) {
+			finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + 2 * direction });
+		}
 	}
 
 	// attacks
-	if (whatIsOnSquare(Vector2Int{ square.x -1, square.y + direction }, enemyPieces)) {
+	if (whatIsOnSquare(Vector2Int{ square.x -1, square.y + direction }, pieces)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x - 1, square.y + direction });
 	}
-	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, enemyPieces)) {
+	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, pieces)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x + 1, square.y + direction });
 	}
 
@@ -244,16 +250,8 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 }
 
 // ugly implementation really not proud of this
-U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
+U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
 	U64 finalMask;
-
-	vector<char> alliedPieces;
-	if (isWhite) {
-		alliedPieces = WPieces;
-	}
-	else {
-		alliedPieces = BPieces;
-	}
 
 	finalMask = 0ull;
 	
@@ -298,23 +296,13 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
 			break;
 		}
 	}
-	
-	finalMask = removeAllies(finalMask, alliedPieces);
 
 	return finalMask;
 }
 
-U64 Board::getValidMovesBitBoardBishop(Vector2Int square, bool isWhite)
+U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
 {
 	U64 finalMask = 0ull;
-
-	vector<char> alliedPieces;
-	if (isWhite) {
-		alliedPieces = WPieces;
-	}
-	else {
-		alliedPieces = BPieces;
-	}
 
 	// SouthEast
 	for (int x = square.x +1; x < 8 && x + square.y - square.x <8; x++) {
@@ -357,39 +345,26 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square, bool isWhite)
 		}
 	}
 
-	finalMask = removeAllies(finalMask, alliedPieces);
-
 	return finalMask;
 }
 
-U64 Board::getValidMovesBitBoardQueen(Vector2Int square, bool isWhite)
+U64 Board::getValidMovesBitBoardQueen(Vector2Int square)
 {
-	return getValidMovesBitBoardRook(square, isWhite) | getValidMovesBitBoardBishop(square, isWhite);
+	return getValidMovesBitBoardRook(square) | getValidMovesBitBoardBishop(square);
 }
 
-U64 Board::getValidMovesBitBoardKing(Vector2Int square, bool isWhite)
+U64 Board::getValidMovesBitBoardKing(Vector2Int square)
 {
 	U64 finalMask = 0ull;
-
-	vector<char> alliedPieces;
-	if (isWhite) {
-		alliedPieces = WPieces;
-	}
-	else {
-		alliedPieces = BPieces;
-	}
 
 	// x  x  x  0  0  0  0  0
 	// x  k  x  0  0  0  0  0
 	// x  x  x 
 	U64 baseMask = 0b1110000010100000111ull;
 
-
 	Vector2Int shift = Vector2Int{ square.x - 1, square.y - 1 };
 
 	finalMask = shiftMask(baseMask, shift);
-
-	finalMask = removeAllies(finalMask, alliedPieces);
 
 	return finalMask;
 }
@@ -512,6 +487,16 @@ Vector2Int Board::processClick(int x, int y) {
 
 void Board::displayBitBoard(U64 bitBoard) {
 	cout << std::bitset<64>(bitBoard) << endl;
+}
+
+vector<char> Board::getAllies(bool isWhite)
+{
+	if (isWhite) {
+		return WPieces;
+	}
+	else {
+		return BPieces;
+	}
 }
 
 
@@ -644,6 +629,8 @@ BoardState Board::ReadFEN(std::string FENState) {
 	// if row = 3 => Black En passant else WEnPassant
 
 	// TODO clocks
+
+	boardState.turn = stoi(FullMoveClock);
 
 	return boardState;
 };

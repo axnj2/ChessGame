@@ -19,6 +19,7 @@ typedef struct BoardState {
 	U64 WEnPassant;
 	U64 BEnPassant;
 	bool WToMove;
+	unsigned int turn;
 
 } BoardState;
 
@@ -53,13 +54,15 @@ private:
 	// returns true if the move was valid
 	bool movePiece(Vector2Int, Vector2Int);
 	U64 getMaskBitBoard(Vector2Int);
-	U64 getValidMovesBitBoard(Vector2Int, char);
-	U64 getValidMovesBitBoardKnight(Vector2Int square, bool isWhite);
+	U64 getAttacksBitBoard(Vector2Int square, char piece);
+	U64 getValidMovesBitBoard(Vector2Int square, char piece);
+	U64 getValidMovesBitBoardKnight(Vector2Int square);
 	U64 getValidMovesBitBoardPawn(Vector2Int square, bool isWhite);
-	U64 getValidMovesBitBoardRook(Vector2Int square, bool isWhite);
-	U64 getValidMovesBitBoardBishop(Vector2Int square, bool isWhite);
-	U64 getValidMovesBitBoardQueen(Vector2Int square, bool isWhite);
-	U64 getValidMovesBitBoardKing(Vector2Int square, bool isWhite);
+	U64 getValidMovesBitBoardRook(Vector2Int square);
+	U64 getValidMovesBitBoardBishop(Vector2Int square);
+	U64 getValidMovesBitBoardQueen(Vector2Int square);
+	U64 getValidMovesBitBoardKing(Vector2Int square);
+
 	U64 shiftMask(U64, Vector2Int);
 
 	// remove from A all squares in B
@@ -73,6 +76,8 @@ private:
 	void addPiece(Vector2Int, char);
 	Vector2Int processClick(int, int);
 	void displayBitBoard(U64);
+
+	vector<char> getAllies(bool isWhite);
 
 public:
 	Board(

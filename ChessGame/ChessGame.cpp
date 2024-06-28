@@ -5,7 +5,7 @@
 #include "raylib.h"
 
 #define windowHeight 1000
-#define windowWidth  1200
+#define windowWidth  1300
 #define sideBuffer 10
 
 int main(void)
