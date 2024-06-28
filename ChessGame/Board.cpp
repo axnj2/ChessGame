@@ -253,53 +253,49 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
 		alliedPieces = BPieces;
 	}
 
-	finalMask = lineMask(square.y) | columnMask(square.x);
-
-	// maybe not very optimised
-	// find first other piece on the right
-	int colRight = square.x +1;
-	for (colRight; colRight < 8; colRight++) {
-		if (whatIsOnSquare(Vector2Int{ colRight , square.y })) {
+	finalMask = 0ull;
+	
+	//East
+	for (int x = square.x + 1; x < 8; x++) {
+		if (!whatIsOnSquare(Vector2Int{ x, square.y})) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x,square.y });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, square.y });
 			break;
 		}
 	}
-	//  very inefficient : 
-	finalMask = removeOverLaps(finalMask, shiftMask(lineMask(square.y), Vector2Int{ colRight + 1, 0 }));
-
-	// on the left now
-	int colLeft = square.x -1 ;
-	for (colLeft; colLeft >= 0; colLeft--) {
-		if (whatIsOnSquare(Vector2Int{ colLeft , square.y })) {
-			break;
+	// W
+	for (int x = square.x - 1; x >= 0; x--) {
+		if (!whatIsOnSquare(Vector2Int{ x, square.y })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x,square.y });
 		}
-	}
-	//  very inefficient : 
-	finalMask = removeOverLaps(finalMask, shiftMask(lineMask(square.y), Vector2Int{ -8 + colLeft , 0 }));
-	//below :
-	int rowDown = square.y + 1;
-	for (rowDown; rowDown <  8; rowDown++) {
-		if (whatIsOnSquare(Vector2Int{ square.x , rowDown })) {
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x,square.y });
 			break;
 		}
 	}
 
-	
-	U64 toBeRemoved = (1ull << (63)) - 1 + (1ull << 63); // all ones
-	toBeRemoved = toBeRemoved << ((rowDown + 1) * 8);
-	
-	finalMask = removeOverLaps(finalMask, toBeRemoved);
-	
-	int rowUp = square.y - 1;
-	for (rowUp; rowUp >= 0; rowUp--) {
-		if (whatIsOnSquare(Vector2Int{ square.x, rowUp })) {
+	// N
+	for (int y = square.y - 1; y >= 0; y--) {
+		if (!whatIsOnSquare(Vector2Int{ square.x, y })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y });
 			break;
 		}
 	}
-	toBeRemoved = (1ull << (63)) - 1 + (1ull << 63); // all ones
-	toBeRemoved = toBeRemoved >> ((rowDown-7 ) * 8);
-	finalMask = removeOverLaps(finalMask, toBeRemoved);
-
 	
+	for (int y = square.y + 1; y < 8; y++) {
+		if (!whatIsOnSquare(Vector2Int{ square.x, y })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y});
+			break;
+		}
+	}
 	
 	finalMask = removeAllies(finalMask, alliedPieces);
 
@@ -328,7 +324,7 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square, bool isWhite)
 			break;
 		}
 	}
-	// NO
+	// N
 	for (int x = square.x - 1; x >= 0 && x + square.y - square.x  >= 0; x--) {
 		if (!whatIsOnSquare(Vector2Int{ x, x + square.y - square.x })) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
