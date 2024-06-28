@@ -57,12 +57,16 @@ private:
 	U64 getValidMovesBitBoardKnight(Vector2Int square, bool isWhite);
 	U64 getValidMovesBitBoardPawn(Vector2Int square, bool isWhite);
 	U64 getValidMovesBitBoardRook(Vector2Int square, bool isWhite);
+	U64 getValidMovesBitBoardBishop(Vector2Int square, bool isWhite);
+	U64 getValidMovesBitBoardQueen(Vector2Int square, bool isWhite);
+	U64 getValidMovesBitBoardKing(Vector2Int square, bool isWhite);
 	U64 shiftMask(U64, Vector2Int);
 
 	// remove from A all squares in B
 	U64 removeOverLaps(U64 A, U64 B);
 	U64 removeAllies(U64 mask, vector<char> allies);
 	U64 lineMask(int line);
+	U64 columnMask(int column);
 	// return 0 if nothing is on the square
 	char whatIsOnSquare(Vector2Int, const vector<char> = pieces);
 	void removePiece(Vector2Int, char);

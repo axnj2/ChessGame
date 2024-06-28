@@ -49,9 +49,6 @@ void Board::drawBoard() {
 	for (int i = 0; i < pieces.size(); i++) {
 		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
-
-	// drawBitBoard(GREEN, shiftMask(getMaskBitBoard(Vector2Int{ 2, 2 }), Vector2Int{ 2,2 }));
-
 	
 
 	
@@ -68,7 +65,8 @@ void Board::onMouseClick(){
 		if (squareSelected.x == -2) {
 			squareSelected = Vector2Int{ -1, -1 };
 		}
-		if (state.WToMove) {
+		// to be uncommented
+		/*if (state.WToMove) {
 			if (!whatIsOnSquare(squareSelected, WPieces)) {
 				squareSelected = Vector2Int{ -1, -1 };
 			}
@@ -77,7 +75,7 @@ void Board::onMouseClick(){
 			if (!whatIsOnSquare(squareSelected, BPieces)) {
 				squareSelected = Vector2Int{ -1, -1 };
 			}
-		}
+		}*/
 	}
 	else {
 		Vector2Int targetSquare = processClick(GetMouseX(), GetMouseY());
@@ -157,7 +155,15 @@ U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
 	else if (piece == 'r' || piece == 'R') {
 		return getValidMovesBitBoardRook(square, isupper(piece));
 	}
-
+	else if (piece == 'b' || piece == 'B') {
+		return getValidMovesBitBoardBishop(square, isupper(piece));
+	}
+	else if (piece == 'q' || piece == 'Q') {
+		return getValidMovesBitBoardQueen(square, isupper(piece));
+	}
+	else if (piece == 'k' || piece == 'K') {
+		return getValidMovesBitBoardKing(square, isupper(piece));
+	}
 
 	return 0;
 }
@@ -230,10 +236,78 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x + 1, square.y + direction });
 	}
 
+	// TODO en passant !
+
 	return finalBitBoard;
 }
 
+// ugly implementation really not proud of this
 U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
+	U64 finalMask;
+
+	vector<char> alliedPieces;
+	if (isWhite) {
+		alliedPieces = WPieces;
+	}
+	else {
+		alliedPieces = BPieces;
+	}
+
+	finalMask = lineMask(square.y) | columnMask(square.x);
+
+	// maybe not very optimised
+	// find first other piece on the right
+	int colRight = square.x +1;
+	for (colRight; colRight < 8; colRight++) {
+		if (whatIsOnSquare(Vector2Int{ colRight , square.y })) {
+			break;
+		}
+	}
+	//  very inefficient : 
+	finalMask = removeOverLaps(finalMask, shiftMask(lineMask(square.y), Vector2Int{ colRight + 1, 0 }));
+
+	// on the left now
+	int colLeft = square.x -1 ;
+	for (colLeft; colLeft >= 0; colLeft--) {
+		if (whatIsOnSquare(Vector2Int{ colLeft , square.y })) {
+			break;
+		}
+	}
+	//  very inefficient : 
+	finalMask = removeOverLaps(finalMask, shiftMask(lineMask(square.y), Vector2Int{ -8 + colLeft , 0 }));
+	//below :
+	int rowDown = square.y + 1;
+	for (rowDown; rowDown <  8; rowDown++) {
+		if (whatIsOnSquare(Vector2Int{ square.x , rowDown })) {
+			break;
+		}
+	}
+
+	
+	U64 toBeRemoved = (1ull << (63)) - 1 + (1ull << 63); // all ones
+	toBeRemoved = toBeRemoved << ((rowDown + 1) * 8);
+	
+	finalMask = removeOverLaps(finalMask, toBeRemoved);
+	
+	int rowUp = square.y - 1;
+	for (rowUp; rowUp >= 0; rowUp--) {
+		if (whatIsOnSquare(Vector2Int{ square.x, rowUp })) {
+			break;
+		}
+	}
+	toBeRemoved = (1ull << (63)) - 1 + (1ull << 63); // all ones
+	toBeRemoved = toBeRemoved >> ((rowDown-7 ) * 8);
+	finalMask = removeOverLaps(finalMask, toBeRemoved);
+
+	
+	
+	finalMask = removeAllies(finalMask, alliedPieces);
+
+	return finalMask;
+}
+
+U64 Board::getValidMovesBitBoardBishop(Vector2Int square, bool isWhite)
+{
 	U64 finalMask = 0ull;
 
 	vector<char> alliedPieces;
@@ -244,11 +318,80 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square, bool isWhite) {
 		alliedPieces = BPieces;
 	}
 
-	finalMask |= lineMask(square.y);
+	// SouthEast
+	for (int x = square.x +1; x < 8 && x + square.y - square.x <8; x++) {
+		if (!whatIsOnSquare(Vector2Int{ x, x +square.y - square.x })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
+			break;
+		}
+	}
+	// NO
+	for (int x = square.x - 1; x >= 0 && x + square.y - square.x  >= 0; x--) {
+		if (!whatIsOnSquare(Vector2Int{ x, x + square.y - square.x })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
+			break;
+		}
+	}
+	// NE
+	for (int x = square.x + 1; x < 8 && -x + square.y + square.x < 8 && -x + square.y + square.x >=0; x++) {
+		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
+			break;
+		}
+	}
+	// SO
+	for (int x = square.x - 1; x >= 0 && -x + square.y + square.x >= 0 && -x + square.y + square.x <8; x--) {
+		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x })) {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
+		}
+		else {
+			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
+			break;
+		}
+	}
 
 	finalMask = removeAllies(finalMask, alliedPieces);
 
-	
+	return finalMask;
+}
+
+U64 Board::getValidMovesBitBoardQueen(Vector2Int square, bool isWhite)
+{
+	return getValidMovesBitBoardRook(square, isWhite) | getValidMovesBitBoardBishop(square, isWhite);
+}
+
+U64 Board::getValidMovesBitBoardKing(Vector2Int square, bool isWhite)
+{
+	U64 finalMask = 0ull;
+
+	vector<char> alliedPieces;
+	if (isWhite) {
+		alliedPieces = WPieces;
+	}
+	else {
+		alliedPieces = BPieces;
+	}
+
+	// x  x  x  0  0  0  0  0
+	// x  k  x  0  0  0  0  0
+	// x  x  x 
+	U64 baseMask = 0b1110000010100000111ull;
+
+
+	Vector2Int shift = Vector2Int{ square.x - 1, square.y - 1 };
+
+	finalMask = shiftMask(baseMask, shift);
+
+	finalMask = removeAllies(finalMask, alliedPieces);
 
 	return finalMask;
 }
@@ -313,7 +456,14 @@ U64 Board::lineMask(int line) {
 		mask = (1ull << (8 * (line + 1))) - 1 - ((1ull << (8 * (line))) - 1);
 	}
 	return mask;
-}	
+}
+
+U64 Board::columnMask(int column) {
+	U64 firstCol = 0b0000000100000001000000010000000100000001000000010000000100000001ull;
+
+	return firstCol << column;
+}
+
 
 
 char Board::whatIsOnSquare(Vector2Int square, vector<char> SelectedPieces)

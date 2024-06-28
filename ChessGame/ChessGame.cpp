@@ -22,7 +22,7 @@ int main(void)
         Vector2{ sideBuffer ,sideBuffer }, // only does nice spacing for square windows
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     );
-
+    // "rnbqkbnr/pppppppp/8/3p1p2/4B3/3p4/PPPPPPPp/RNBQKBNR w KQkq - 0 1"
     std::cout << Texture{}.height;
     
 
