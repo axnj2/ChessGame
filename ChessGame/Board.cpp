@@ -65,8 +65,8 @@ void Board::onMouseClick(){
 		if (squareSelected.x == -2) {
 			squareSelected = Vector2Int{ -1, -1 };
 		}
-		// to be uncommented
-		/*if (state.WToMove) {
+
+		if (state.WToMove) {
 			if (!whatIsOnSquare(squareSelected, WPieces)) {
 				squareSelected = Vector2Int{ -1, -1 };
 			}
@@ -75,7 +75,7 @@ void Board::onMouseClick(){
 			if (!whatIsOnSquare(squareSelected, BPieces)) {
 				squareSelected = Vector2Int{ -1, -1 };
 			}
-		}*/
+		}
 	}
 	else {
 		Vector2Int targetSquare = processClick(GetMouseX(), GetMouseY());
@@ -98,7 +98,7 @@ TODO :
 */
 bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
-	char friendlyPiece = whatIsOnSquare(from);
+	char pieceOnSquare = whatIsOnSquare(from);
 	
 
 	
@@ -112,13 +112,17 @@ bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	}
 
 	// check if occupied by friendly piece
-	if (whatIsOnSquare(to, friendlyPieces)) {
+	// handled in the valid moves bitboard
+	/*if (whatIsOnSquare(to, friendlyPieces)) {
+		return false;
+	}*/
+
+	// check that the move is valid :
+	if (!(getValidMovesBitBoard(from, pieceOnSquare) & getMaskBitBoard(to))) {
 		return false;
 	}
 
 	// check if the target square is occupied by enemy, if so kill it
-	// TODO make it correct, but for now kills the enemy piece on the square
-
 	char enemyPiece = whatIsOnSquare(to); // can't be a friendly piece since it was checked before
 	if (enemyPiece) { // false if the square is empty
 		removePiece(to, enemyPiece);
@@ -129,13 +133,11 @@ bool Board::movePiece(Vector2Int from, Vector2Int to) {
 	bool empty = !whatIsOnSquare(to);
 
 	if (empty) {
-		removePiece(from, friendlyPiece);
-		addPiece(to, friendlyPiece);
+		removePiece(from, pieceOnSquare);
+		addPiece(to, pieceOnSquare);
 		return true;
 	}
-	else {
 
-	}
 	return false;
 };
 
