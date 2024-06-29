@@ -52,18 +52,26 @@ private:
 
 	void drawBitBoard(Color, U64, Texture = Texture{});
 	// returns true if the move was valid
-	bool movePiece(Vector2Int, Vector2Int);
-	U64 getMaskBitBoard(Vector2Int);
-	U64 getAttacksBitBoard(Vector2Int square, char piece);
-	U64 getValidMovesBitBoard(Vector2Int square, char piece);
-	U64 getValidMovesBitBoardKnight(Vector2Int square);
-	U64 getValidMovesBitBoardPawn(Vector2Int square, bool isWhite);
-	U64 getValidMovesBitBoardRook(Vector2Int square);
-	U64 getValidMovesBitBoardBishop(Vector2Int square);
-	U64 getValidMovesBitBoardQueen(Vector2Int square);
-	U64 getValidMovesBitBoardKing(Vector2Int square);
+	bool safeMovePiece(Vector2Int from, Vector2Int to);
+	BoardState movePiece(Vector2Int from, Vector2Int to, BoardState previousState);
+
+	U64 getMaskBitBoard(Vector2Int); 
+
+	U64 getAttacksBitBoard(Vector2Int square, char piece, BoardState workingState);
+	U64 getValidMovesBitBoard(Vector2Int square, char piece, BoardState workingState);
+	U64 getValidMovesBitBoardKnight(Vector2Int square, BoardState workingState);
+	U64 getValidMovesBitBoardPawn(Vector2Int square, bool isWhite, BoardState workingState);
+	U64 getValidAttacksPawn(Vector2Int square, bool isWhite, BoardState workingState);
+	U64 getValidMovesBitBoardRook(Vector2Int square, BoardState workingState);
+	U64 getValidMovesBitBoardBishop(Vector2Int square, BoardState workingState);
+	U64 getValidMovesBitBoardQueen(Vector2Int square, BoardState workingState);
+	U64 getValidMovesBitBoardKing(Vector2Int square, BoardState workingState);
 
 	U64 shiftMask(U64, Vector2Int);
+
+	U64 getAttackedSquaresBy(bool isWhite, BoardState positions);
+	bool isInCheckBy(bool isWhite, BoardState positions);
+	U64 removeChecksFromPossibleMoves(U64 possibleMoves, Vector2Int square, char piece);
 
 	// remove from A all squares in B
 	U64 removeOverLaps(U64 A, U64 B);
@@ -71,13 +79,22 @@ private:
 	U64 lineMask(int line);
 	U64 columnMask(int column);
 	// return 0 if nothing is on the square
-	char whatIsOnSquare(Vector2Int, const vector<char> = pieces);
+	char whatIsOnSquare(Vector2Int);
+	char whatIsOnSquare(Vector2Int, const vector<char>);
+	char whatIsOnSquare(Vector2Int, const vector<char>, BoardState);
+	char whatIsOnSquare(Vector2Int, BoardState);
 	void removePiece(Vector2Int, char);
+	BoardState removePiece(Vector2Int, char, BoardState);
 	void addPiece(Vector2Int, char);
+	BoardState addPiece(Vector2Int, char, BoardState);
 	Vector2Int processClick(int, int);
-	void displayBitBoard(U64);
+	void print(U64);
+	void print(Vector2Int);
 
 	vector<char> getAllies(bool isWhite);
+	vector<Vector2Int> getAllPosInBitBoard(U64 bitBoard);
+
+
 
 public:
 	Board(

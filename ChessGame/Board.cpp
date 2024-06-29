@@ -2,6 +2,7 @@
 #include "Board.h"
 #include <ctype.h>
 #include <iterator>
+#include <exception>
 
 //DEBUG :
 #include <iostream>
@@ -51,12 +52,14 @@ void Board::drawBoard() {
 		drawBitBoard(Color{ 0,0,0,50 }, getMaskBitBoard(squareSelected));
 		drawBitBoard(
 			Color{ 255, 0 , 0, 100 },
-			getValidMovesBitBoard(squareSelected, whatIsOnSquare(squareSelected)));
+			getValidMovesBitBoard(squareSelected, whatIsOnSquare(squareSelected), state));
 	}
 
 	for (int i = 0; i < pieces.size(); i++) {
 		drawBitBoard(Color{ 255, 0, 0, 100 }, state.piecesBitmaps[pieces[i]], piecesTextures[pieces[i]]);
 	}
+
+	drawBitBoard(Color{ 0,0,255,100 }, getAttackedSquaresBy(state.WToMove, state));
 	
 	// draw the turn number
 	DrawText(to_string(state.turn).c_str(), squareSize * 8 + squareSize / 4, squareSize * 4, 50, GRAY);
@@ -64,6 +67,8 @@ void Board::drawBoard() {
 	// indicate whose turn is is : 
 	string text = "Your Turn";
 	DrawText(text.c_str(), squareSize * 8 + squareSize / 4, squareSize + state.WToMove * (squareSize * 6), 50, BLACK);
+
+
 };
 
 
@@ -89,7 +94,7 @@ void Board::onMouseClick(){
 	else {
 		Vector2Int targetSquare = processClick(GetMouseX(), GetMouseY());
 		if (targetSquare.x != -2) {
-			if (movePiece(squareSelected, targetSquare)) {
+			if (safeMovePiece(squareSelected, targetSquare)) {
 				state.WToMove = !state.WToMove;
 				if (state.WToMove) {
 					state.turn += 1;
@@ -107,90 +112,102 @@ TODO :
  - checkmate
  - en Passant
 */
-bool Board::movePiece(Vector2Int from, Vector2Int to) {
+bool Board::safeMovePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
 	char pieceOnSquare = whatIsOnSquare(from);
 	
-
-	
-	std::vector<char> friendlyPieces;
-	if (state.WToMove) {
-		friendlyPieces = WPieces;
-	}
-	else
-	{
-		friendlyPieces = BPieces;
-	}
-
-	// check if occupied by friendly piece
-	// handled in the valid moves bitboard
-	/*if (whatIsOnSquare(to, friendlyPieces)) {
-		return false;
-	}*/
-
 	// check that the move is valid :
-	if (!(getValidMovesBitBoard(from, pieceOnSquare) & getMaskBitBoard(to))) {
+	if (!(getValidMovesBitBoard(from, pieceOnSquare, state) & getMaskBitBoard(to))) {
 		return false;
 	}
+
+	// now that we know the move is valid
+	state = movePiece(from, to, state);
+	return true;
+}
+
+// doesn't do any checks, assumes the to square is either empty or as an enemy piece that needs to be killeds
+BoardState Board::movePiece(Vector2Int from, Vector2Int to, BoardState oldState)
+{
+	BoardState newState = oldState;
+	// first find what piece is on the from square (assumes 1 piece per square)
+	char pieceOnSquare = whatIsOnSquare(from, newState);
 
 	// check if the target square is occupied by enemy, if so kill it
-	char enemyPiece = whatIsOnSquare(to); // can't be a friendly piece since it was checked before
+	char enemyPiece = whatIsOnSquare(to, newState); // can't be a friendly piece since it was checked before
 	if (enemyPiece) { // false if the square is empty
-		removePiece(to, enemyPiece);
+		newState = removePiece(to, enemyPiece, newState);
 	}
 
 
 	// check that there is no piece on the to square
-	bool empty = !whatIsOnSquare(to);
+	bool empty = !whatIsOnSquare(to, newState);
 
 	if (empty) {
-		removePiece(from, pieceOnSquare);
-		addPiece(to, pieceOnSquare);
-		return true;
+		newState = removePiece(from, pieceOnSquare, newState);
+		newState = addPiece(to, pieceOnSquare, newState);
+	}
+	else {
+		throw std::runtime_error("there was still a piece on the board");
 	}
 
-	return false;
-};
+	return newState;
+}
+
+
+
+
+
 
 
 U64 Board::getMaskBitBoard(Vector2Int square) {
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
 
-U64 Board::getAttacksBitBoard(Vector2Int square, char piece)
+// TODO this should be taking the working state as argument and not looking at the variable state
+// that means changing all the sub functions
+U64 Board::getAttacksBitBoard(Vector2Int square, char piece, BoardState workingState)
 {
 	U64 attacks = 0ull;
 	if (piece == 'n' || piece == 'N') {
-		attacks = getValidMovesBitBoardKnight(square);
+		attacks = getValidMovesBitBoardKnight(square, workingState);
 	}
 	else if (piece == 'p' || piece == 'P') {
-		attacks = getValidMovesBitBoardPawn(square, isupper(piece));
+		attacks = getValidAttacksPawn(square, isupper(piece), workingState);
 	}
 	else if (piece == 'r' || piece == 'R') {
-		attacks = getValidMovesBitBoardRook(square);
+		attacks = getValidMovesBitBoardRook(square, workingState);
 	}
 	else if (piece == 'b' || piece == 'B') {
-		attacks = getValidMovesBitBoardBishop(square);
+		attacks = getValidMovesBitBoardBishop(square, workingState);
 	}
 	else if (piece == 'q' || piece == 'Q') {
-		attacks = getValidMovesBitBoardQueen(square);
+		attacks = getValidMovesBitBoardQueen(square, workingState);
 	}
 	else if (piece == 'k' || piece == 'K') {
-		attacks = getValidMovesBitBoardKing(square);
+		attacks = getValidMovesBitBoardKing(square, workingState);
 	}
 
 	return attacks;
 }
 
-U64 Board::getValidMovesBitBoard(Vector2Int square, char piece)
+U64 Board::getValidMovesBitBoard(Vector2Int square, char piece, BoardState workingState)
 {
-	U64 attacks = getAttacksBitBoard(square, piece);
-	return removeAllies(attacks, getAllies(isupper(piece)));
+	U64 validMoves;
+	if (piece == 'p' || piece == 'P') {
+		validMoves = getValidMovesBitBoardPawn(square, isupper(piece), workingState);
+	}
+	else {
+		validMoves = getAttacksBitBoard(square, piece, workingState);
+	}
+	validMoves = removeAllies(validMoves, getAllies(isupper(piece)));
+	validMoves = removeChecksFromPossibleMoves(validMoves, square, piece);
+	return validMoves;
 }
 
 
 
-U64 Board::getValidMovesBitBoardKnight(Vector2Int square)
+U64 Board::getValidMovesBitBoardKnight(Vector2Int square, BoardState workingState)
 {
 	// for a knight in position (2, 2)
 	//     0  x  0  x  0  0  0  0
@@ -211,7 +228,7 @@ U64 Board::getValidMovesBitBoardKnight(Vector2Int square)
 	return  finalMask;
 }
 
-U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
+U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite, BoardState workingState)
 {
 	U64 finalBitBoard = 0;
 	int direction;
@@ -229,18 +246,37 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 		}
 	}
 
-	if (!whatIsOnSquare(Vector2Int{ square.x, square.y + direction }, pieces)) {
+	if (!whatIsOnSquare(Vector2Int{ square.x, square.y + direction }, pieces, workingState)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + direction });
-		if (onHomeRow && !whatIsOnSquare(Vector2Int{ square.x, square.y + 2 * direction }, pieces)) {
+		if (onHomeRow && !whatIsOnSquare(Vector2Int{ square.x, square.y + 2 * direction }, pieces, workingState)) {
 			finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x, square.y + 2 * direction });
 		}
 	}
 
 	// attacks
-	if (whatIsOnSquare(Vector2Int{ square.x -1, square.y + direction }, pieces)) {
+	finalBitBoard |= getValidAttacksPawn(square, isWhite, workingState);
+
+	
+
+	return finalBitBoard;
+}
+
+U64 Board::getValidAttacksPawn(Vector2Int square, bool isWhite, BoardState workingState)
+{
+	U64 finalBitBoard = 0;
+	int direction;
+	if (isWhite) {
+		direction = -1;
+	}
+	else {
+		direction = 1;
+	}
+
+	// attacks
+	if (whatIsOnSquare(Vector2Int{ square.x - 1, square.y + direction }, pieces, workingState)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x - 1, square.y + direction });
 	}
-	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, pieces)) {
+	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, pieces, workingState)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x + 1, square.y + direction });
 	}
 
@@ -250,14 +286,14 @@ U64 Board::getValidMovesBitBoardPawn(Vector2Int square, bool isWhite)
 }
 
 // ugly implementation really not proud of this
-U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
+U64 Board::getValidMovesBitBoardRook(Vector2Int square, BoardState workingState) {
 	U64 finalMask;
 
 	finalMask = 0ull;
 	
 	//East
 	for (int x = square.x + 1; x < 8; x++) {
-		if (!whatIsOnSquare(Vector2Int{ x, square.y})) {
+		if (!whatIsOnSquare(Vector2Int{ x, square.y}, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x,square.y });
 		}
 		else {
@@ -267,7 +303,7 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
 	}
 	// W
 	for (int x = square.x - 1; x >= 0; x--) {
-		if (!whatIsOnSquare(Vector2Int{ x, square.y })) {
+		if (!whatIsOnSquare(Vector2Int{ x, square.y }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x,square.y });
 		}
 		else {
@@ -278,7 +314,7 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
 
 	// N
 	for (int y = square.y - 1; y >= 0; y--) {
-		if (!whatIsOnSquare(Vector2Int{ square.x, y })) {
+		if (!whatIsOnSquare(Vector2Int{ square.x, y }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y });
 		}
 		else {
@@ -288,7 +324,7 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
 	}
 	
 	for (int y = square.y + 1; y < 8; y++) {
-		if (!whatIsOnSquare(Vector2Int{ square.x, y })) {
+		if (!whatIsOnSquare(Vector2Int{ square.x, y }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ square.x, y });
 		}
 		else {
@@ -300,13 +336,13 @@ U64 Board::getValidMovesBitBoardRook(Vector2Int square) {
 	return finalMask;
 }
 
-U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
+U64 Board::getValidMovesBitBoardBishop(Vector2Int square, BoardState workingState)
 {
 	U64 finalMask = 0ull;
 
 	// SouthEast
 	for (int x = square.x +1; x < 8 && x + square.y - square.x <8; x++) {
-		if (!whatIsOnSquare(Vector2Int{ x, x +square.y - square.x })) {
+		if (!whatIsOnSquare(Vector2Int{ x, x +square.y - square.x }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
 		}
 		else {
@@ -316,7 +352,7 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
 	}
 	// N
 	for (int x = square.x - 1; x >= 0 && x + square.y - square.x  >= 0; x--) {
-		if (!whatIsOnSquare(Vector2Int{ x, x + square.y - square.x })) {
+		if (!whatIsOnSquare(Vector2Int{ x, x + square.y - square.x }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x, x + square.y - square.x });
 		}
 		else {
@@ -326,7 +362,7 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
 	}
 	// NE
 	for (int x = square.x + 1; x < 8 && -x + square.y + square.x < 8 && -x + square.y + square.x >=0; x++) {
-		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x })) {
+		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
 		}
 		else {
@@ -336,7 +372,7 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
 	}
 	// SO
 	for (int x = square.x - 1; x >= 0 && -x + square.y + square.x >= 0 && -x + square.y + square.x <8; x--) {
-		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x })) {
+		if (!whatIsOnSquare(Vector2Int{ x, -x + square.y + square.x }, workingState)) {
 			finalMask |= getMaskBitBoard(Vector2Int{ x, -x + square.y + square.x });
 		}
 		else {
@@ -348,12 +384,12 @@ U64 Board::getValidMovesBitBoardBishop(Vector2Int square)
 	return finalMask;
 }
 
-U64 Board::getValidMovesBitBoardQueen(Vector2Int square)
+U64 Board::getValidMovesBitBoardQueen(Vector2Int square, BoardState workingState)
 {
-	return getValidMovesBitBoardRook(square) | getValidMovesBitBoardBishop(square);
+	return getValidMovesBitBoardRook(square, workingState) | getValidMovesBitBoardBishop(square, workingState);
 }
 
-U64 Board::getValidMovesBitBoardKing(Vector2Int square)
+U64 Board::getValidMovesBitBoardKing(Vector2Int square, BoardState workingState)
 {
 	U64 finalMask = 0ull;
 
@@ -397,6 +433,51 @@ U64 Board::shiftMask(U64 baseMask, Vector2Int shift)
 	return finalMask;
 }
 
+U64 Board::getAttackedSquaresBy(bool isWhite, BoardState positions)
+{
+	vector<char> attackers = getAllies(isWhite);
+	U64 attackedSquares = 0ull;
+
+	for (char piece : attackers) {
+		for (Vector2Int piecePosition : getAllPosInBitBoard(positions.piecesBitmaps[piece])) {
+			attackedSquares |= getAttacksBitBoard(piecePosition, piece, positions);
+		}
+	}
+
+	return attackedSquares;
+}
+
+bool Board::isInCheckBy(bool isWhite, BoardState positions)
+{
+	U64 attackedSquares = getAttackedSquaresBy(isWhite, positions);
+	cout << "attackedSquares :";
+	print(attackedSquares);
+	cout << "king position :  ";
+	print(positions.piecesBitmaps[getAllies(!isWhite)[0]]);
+	// WPieces and BPieces have the king in first position
+	return attackedSquares & positions.piecesBitmaps[getAllies(!isWhite)[0]];
+}
+
+U64 Board::removeChecksFromPossibleMoves(U64 possibleMoves, Vector2Int square, char piece)
+{
+	cout << "piece : " << piece << endl;
+	U64 newPossibleMoves = possibleMoves;
+
+	for (Vector2Int move : getAllPosInBitBoard(possibleMoves)) {
+		if (isInCheckBy(islower(piece), movePiece(square, move, state))) {
+			cout << "found invalid move, before : ";
+			print(newPossibleMoves);
+			newPossibleMoves &= ~getMaskBitBoard(move);
+			cout << "after :                      ";
+			print(newPossibleMoves);
+		}
+	}
+
+	return newPossibleMoves;
+}
+
+
+
 U64 Board::removeOverLaps(U64 A, U64 B)
 {
 	U64 overlaps = A & B;
@@ -439,13 +520,23 @@ U64 Board::columnMask(int column) {
 
 
 
+char Board::whatIsOnSquare(Vector2Int square)
+{
+	return whatIsOnSquare(square, pieces, state);
+}
+
 char Board::whatIsOnSquare(Vector2Int square, vector<char> SelectedPieces)
+{
+	return whatIsOnSquare(square, SelectedPieces, state);
+}
+
+char Board::whatIsOnSquare(Vector2Int square, const vector<char> SelectedPieces, BoardState currentState)
 {
 	char piece = 0;
 	U64 fromBitBoardMask = getMaskBitBoard(square);
 
 	for (int i = 0; i < SelectedPieces.size(); i++) {
-		if (state.piecesBitmaps[SelectedPieces[i]] & fromBitBoardMask) {
+		if (currentState.piecesBitmaps[SelectedPieces[i]] & fromBitBoardMask) {
 			piece = SelectedPieces[i];
 			break;
 		}
@@ -454,17 +545,40 @@ char Board::whatIsOnSquare(Vector2Int square, vector<char> SelectedPieces)
 	return piece;
 }
 
+char Board::whatIsOnSquare(Vector2Int square,  BoardState currentState)
+{
+	return whatIsOnSquare(square, pieces, currentState);
+}
+
 
 void Board::removePiece(Vector2Int square, char piece) {
-	U64 removeMask = ~getMaskBitBoard(square);
+	// TODO make a version with previous and new state variable
+	U64 removeMask = ~getMaskBitBoard(square); 
 	state.piecesBitmaps[piece] &= removeMask;
+}
+
+BoardState Board::removePiece(Vector2Int square, char piece, BoardState oldState)
+{
+	U64 removeMask = ~getMaskBitBoard(square);
+	oldState.piecesBitmaps[piece] &= removeMask;
+	return oldState;
 }
 
 
 void Board::addPiece(Vector2Int square, char piece) {
+	// TODO make a version with previous and new state variable
 	U64 addMask = getMaskBitBoard(square);
 	state.piecesBitmaps[piece] |= addMask;
 }
+
+BoardState Board::addPiece(Vector2Int square, char piece, BoardState oldState)
+{
+	U64 addMask = getMaskBitBoard(square);
+	oldState.piecesBitmaps[piece] |= addMask;
+	return oldState;
+}
+
+
 
 
 /*
@@ -472,8 +586,8 @@ Returns Vector2Int{-2, -2} is the click is outside of the board
 */
 Vector2Int Board::processClick(int x, int y) {
 	Vector2Int square;
-	x -= pos.x;
-	y -= pos.y;
+	x -= int(pos.x);
+	y -= int(pos.y);
 
 	if (x > squareSize * 8 || y > squareSize * 8 || x <0 || y < 0) {
 		square = Vector2Int{ -2, -2 };
@@ -485,8 +599,13 @@ Vector2Int Board::processClick(int x, int y) {
 	return square;
 }
 
-void Board::displayBitBoard(U64 bitBoard) {
+void Board::print(U64 bitBoard) {
 	cout << std::bitset<64>(bitBoard) << endl;
+}
+
+void Board::print(Vector2Int vect)
+{
+	cout << "(x, y) = (" << vect.x << ", " << vect.y << ")" << endl;
 }
 
 vector<char> Board::getAllies(bool isWhite)
@@ -498,6 +617,23 @@ vector<char> Board::getAllies(bool isWhite)
 		return BPieces;
 	}
 }
+
+vector<Vector2Int> Board::getAllPosInBitBoard(U64 bitBoard)
+{
+	vector<Vector2Int> allPos = vector<Vector2Int>();
+	// could be optimized
+	for (int x = 0; x < 8; x++) {
+		for (int y = 0; y < 8; y++) {
+			if (bitBoard & getMaskBitBoard(Vector2Int{ x, y })) {
+				allPos.push_back(Vector2Int{ x, y });
+			}
+		}
+	}
+
+	return allPos;
+}
+
+
 
 
 
@@ -628,7 +764,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 
 	// TODO castling
 
-	// TODO En passant letter -> col and number -> row 
+	// TODO En passant letter -> col and number -> row
 	// then use static_cast<U64>(1) << (col+ row * 8)
 	// if row = 3 => Black En passant else WEnPassant
 

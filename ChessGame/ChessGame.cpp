@@ -19,8 +19,8 @@ int main(void)
         Color{ 238, 238, 210, 255 },
         Color{ 118, 150, 86, 255 },
         std::min(windowHeight, windowWidth) - 2 * sideBuffer, 
-        Vector2{ sideBuffer ,sideBuffer }, // only does nice spacing for square windows
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        Vector2{ sideBuffer ,sideBuffer }, // places the board on the left of the screen
+        "8/Q5pk/8/8/8/8/8/4K3 b KQkq - 0 1"
     );
     // "rnbqkbnr/pppppppp/8/3p1p2/4B3/3p4/PPPPPPPp/RNBQKBNR w KQkq - 0 1"
     std::cout << Texture{}.height;
