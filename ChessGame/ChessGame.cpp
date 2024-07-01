@@ -20,11 +20,10 @@ int main(void)
         Color{ 118, 150, 86, 255 },
         std::min(windowHeight, windowWidth) - 2 * sideBuffer, 
         Vector2{ sideBuffer ,sideBuffer }, // places the board on the left of the screen
-        "8/Q5pk/8/8/8/8/8/4K3 b KQkq - 0 1"
+        "rnbqkbnr/pppppppp/8/3p1p2/4B3/3p4/PPPPPPPp/RNBQKBNR w KQkq - 0 1"
     );
     // "rnbqkbnr/pppppppp/8/3p1p2/4B3/3p4/PPPPPPPp/RNBQKBNR w KQkq - 0 1"
-    std::cout << Texture{}.height;
-    
+    //"8/Q5pk/8/8/8/8/8/4K3 b KQkq - 0 1"
 
     while (!WindowShouldClose())
     {

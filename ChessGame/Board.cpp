@@ -60,6 +60,7 @@ void Board::drawBoard() {
 	}
 
 	drawBitBoard(Color{ 0,0,255,100 }, getAttackedSquaresBy(state.WToMove, state));
+	drawBitBoard(Color{ 0, 255, 0, 100 }, getMaskBitBoard(state.enPassant));
 	
 	// draw the turn number
 	DrawText(to_string(state.turn).c_str(), squareSize * 8 + squareSize / 4, squareSize * 4, 50, GRAY);
@@ -108,9 +109,8 @@ void Board::onMouseClick(){
 /*
 Uses the state variable to access the bitboards and whose turn it is to move
 TODO :
- - checks
- - checkmate
  - en Passant
+ - checkmate
 */
 bool Board::safeMovePiece(Vector2Int from, Vector2Int to) {
 	// first find what piece is on the from square (assumes 1 piece per square)
@@ -120,6 +120,9 @@ bool Board::safeMovePiece(Vector2Int from, Vector2Int to) {
 	if (!(getValidMovesBitBoard(from, pieceOnSquare, state) & getMaskBitBoard(to))) {
 		return false;
 	}
+
+	
+
 
 	// now that we know the move is valid
 	state = movePiece(from, to, state);
@@ -148,7 +151,34 @@ BoardState Board::movePiece(Vector2Int from, Vector2Int to, BoardState oldState)
 		newState = addPiece(to, pieceOnSquare, newState);
 	}
 	else {
-		throw std::runtime_error("there was still a piece on the board");
+		throw std::runtime_error("there was still a piece on the target square");
+	}
+
+	// kill pawn that was a victim of enPassant :
+	if (to == oldState.enPassant && (pieceOnSquare == 'p' || pieceOnSquare == 'P')) {
+		if (isupper(pieceOnSquare)) {
+			newState = removePiece(Vector2Int{ oldState.enPassant.x, oldState.enPassant.y + 1 }, 'p', oldState);
+		}
+		else {
+			newState = removePiece(Vector2Int{ oldState.enPassant.x, oldState.enPassant.y - 1 }, 'P', oldState);
+		}
+	}
+
+
+	// save EnPassant opportunity :
+	if ((pieceOnSquare == 'p' || pieceOnSquare == 'P') && (from.y == 1 || from.y == 6) && (to.y == 3 || to.y == 4)) {
+		if (to.y == 3) {
+			newState.enPassant = Vector2Int{ to.x, 2 };
+		}
+		else if (to.y == 4) {
+			newState.enPassant = Vector2Int{ to.x, 5 };
+		}
+		else {
+			cout << "ERROR : there was an issue in move Piece in the save En passant opportunity logic" << endl;
+		}
+	}
+	else {
+		newState.enPassant = Vector2Int{ -1, -1 };
 	}
 
 	return newState;
@@ -161,6 +191,14 @@ BoardState Board::movePiece(Vector2Int from, Vector2Int to, BoardState oldState)
 
 
 U64 Board::getMaskBitBoard(Vector2Int square) {
+	if (square.x == -1 || square.y == -1) {
+		return 0ull;
+	}
+	else if (square.x < 0 || square.y < 0 || square.x > 7 || square.y > 7) {
+		cout << "ERROR : in getMaskBitBoard, square out of range !" << endl;
+		return 0ull;
+	}
+
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
 
@@ -273,14 +311,19 @@ U64 Board::getValidAttacksPawn(Vector2Int square, bool isWhite, BoardState worki
 	}
 
 	// attacks
-	if (whatIsOnSquare(Vector2Int{ square.x - 1, square.y + direction }, pieces, workingState)) {
+	if (square.x - 1 >= 0 && whatIsOnSquare(Vector2Int{ square.x - 1, square.y + direction }, pieces, workingState)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x - 1, square.y + direction });
 	}
-	if (whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, pieces, workingState)) {
+	if (square.x + 1 < 8 && whatIsOnSquare(Vector2Int{ square.x + 1, square.y + direction }, pieces, workingState)) {
 		finalBitBoard |= getMaskBitBoard(Vector2Int{ square.x + 1, square.y + direction });
 	}
 
 	// TODO en passant !
+	if (square.y + direction == workingState.enPassant.y) {
+		if (square.x + 1 == workingState.enPassant.x || square.x - 1 == workingState.enPassant.x) {
+			finalBitBoard |= getMaskBitBoard(workingState.enPassant);
+		}
+	}
 
 	return finalBitBoard;
 }
@@ -450,26 +493,26 @@ U64 Board::getAttackedSquaresBy(bool isWhite, BoardState positions)
 bool Board::isInCheckBy(bool isWhite, BoardState positions)
 {
 	U64 attackedSquares = getAttackedSquaresBy(isWhite, positions);
-	cout << "attackedSquares :";
+	/*cout << "attackedSquares :";
 	print(attackedSquares);
 	cout << "king position :  ";
-	print(positions.piecesBitmaps[getAllies(!isWhite)[0]]);
+	print(positions.piecesBitmaps[getAllies(!isWhite)[0]]);*/
 	// WPieces and BPieces have the king in first position
 	return attackedSquares & positions.piecesBitmaps[getAllies(!isWhite)[0]];
 }
 
 U64 Board::removeChecksFromPossibleMoves(U64 possibleMoves, Vector2Int square, char piece)
 {
-	cout << "piece : " << piece << endl;
+	//cout << "piece : " << piece << endl;
 	U64 newPossibleMoves = possibleMoves;
 
 	for (Vector2Int move : getAllPosInBitBoard(possibleMoves)) {
 		if (isInCheckBy(islower(piece), movePiece(square, move, state))) {
-			cout << "found invalid move, before : ";
-			print(newPossibleMoves);
+			//cout << "found invalid move, before : ";
+			//print(newPossibleMoves);
 			newPossibleMoves &= ~getMaskBitBoard(move);
-			cout << "after :                      ";
-			print(newPossibleMoves);
+			//cout << "after :                      ";
+			//print(newPossibleMoves);
 		}
 	}
 
@@ -767,6 +810,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 	// TODO En passant letter -> col and number -> row
 	// then use static_cast<U64>(1) << (col+ row * 8)
 	// if row = 3 => Black En passant else WEnPassant
+	boardState.enPassant = Vector2Int{ -1, -1 };
 
 	// TODO halfTurn Clock
 
@@ -775,3 +819,7 @@ BoardState Board::ReadFEN(std::string FENState) {
 	return boardState;
 };
 
+bool operator==(const Vector2Int& lhs, const Vector2Int& rhs)
+{
+	return lhs.x == rhs.x && lhs.y == rhs.y;
+}

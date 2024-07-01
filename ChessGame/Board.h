@@ -12,21 +12,24 @@ typedef unsigned long long U64;
 
 using namespace std;
 
-
-typedef struct BoardState {
-	// keys are contained in pieces
-	map<char, U64> piecesBitmaps;
-	U64 WEnPassant;
-	U64 BEnPassant;
-	bool WToMove;
-	unsigned int turn;
-
-} BoardState;
-
 struct Vector2Int {
 	int x;
 	int y;
 };
+
+bool operator==(const Vector2Int& lhs, const Vector2Int& rhs);
+
+
+typedef struct BoardState {
+	// keys are contained in pieces
+	map<char, U64> piecesBitmaps;
+	bool WToMove;
+	unsigned int turn;
+	Vector2Int enPassant;
+
+} BoardState;
+
+
 
 class Board {
 private:
