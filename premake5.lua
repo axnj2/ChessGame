@@ -1,4 +1,4 @@
--- Copyright (c) 2020-2024 Jeffery Myers
+-- Copyright (c) 2020-2024 Jeffery Myers from https://github.com/raylib-extras/game-premake
 --
 --This software is provided "as-is", without any express or implied warranty. In no event 
 --will the authors be held liable for any damages arising from the use of this software.
