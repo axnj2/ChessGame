@@ -713,6 +713,9 @@ std::map<char, Texture> Board::LoadPiecesImages() {
 	std::map<char, Image> newPiecesImages;
 	std::map<char, Texture> newPiecesTextures;
 
+	// solution to loading problem on macos : https://www.reddit.com/r/raylib/comments/13k6afb/problem_with_loading_from_file/
+	ChangeDirectory(GetApplicationDirectory()); // when starting the working directory is the home path
+    
 	Image completeImage = LoadImage("./allPieces.png");
 	
 	if (!completeImage.width) {
