@@ -184,12 +184,6 @@ BoardState Board::movePiece(Vector2Int from, Vector2Int to, BoardState oldState)
 	return newState;
 }
 
-
-
-
-
-
-
 U64 Board::getMaskBitBoard(Vector2Int square) {
 	if (square.x == -1 || square.y == -1) {
 		return 0ull;
@@ -202,8 +196,6 @@ U64 Board::getMaskBitBoard(Vector2Int square) {
 	return static_cast<U64>(1) << (square.x + square.y * 8);
 }
 
-// TODO this should be taking the working state as argument and not looking at the variable state
-// that means changing all the sub functions
 U64 Board::getAttacksBitBoard(Vector2Int square, char piece, BoardState workingState)
 {
 	U64 attacks = 0ull;

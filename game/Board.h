@@ -108,6 +108,7 @@ public:
 		std::string startingFENState);// using FEN notation https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	void drawBoard();
 	void onMouseClick();
+	bool gameOver;
 };
 
 
